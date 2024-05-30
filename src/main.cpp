@@ -22,9 +22,9 @@ unsigned long codes[] = {
 };
 
 String stringNum = "";
-int currentLED = 0; // 0 = red, 1 = green, 2 = blue
+int currentLED = 0;
 
-int codesSize = sizeof(codes) / sizeof(codes[0]); // Zjištění počtu prvků v poli codes
+int codesSize = sizeof(codes) / sizeof(codes[0]);
 
 String receivedNum(unsigned long irData) {
   for (int i = 0; i < codesSize; i++) {
@@ -32,28 +32,28 @@ String receivedNum(unsigned long irData) {
       return String(i);
     }
   }
-  return ""; // Pokud kód neodpovídá žádnému číslu, vrátí prázdný řetězec
+  return ""; 
 }
 
 void setLED(int value) {
   switch (currentLED) {
     case 0:
+      Serial.print("Nastavuji Červenou LED: ");
       analogWrite(redLed, value);
-      Serial.print("Červená LED: ");
       Serial.println(value);
-      currentLED = 1; // Přepnutí na další LED
+      currentLED = 1;
       break;
     case 1:
+      Serial.print("Nastavuji Zelenou LED: ");
       analogWrite(greenLed, value);
-      Serial.print("Zelená LED: ");
       Serial.println(value);
-      currentLED = 2; // Přepnutí na další LED
+      currentLED = 2;
       break;
     case 2:
+      Serial.print("Nastavuji Modrou LED: ");
       analogWrite(blueLed, value);
-      Serial.print("Modrá LED: ");
       Serial.println(value);
-      currentLED = 3; // Přepnutí na další LED
+      currentLED = 0;
       break;
     default:
       Serial.println("Nesprávný stav LED");
@@ -62,8 +62,8 @@ void setLED(int value) {
 }
 
 void setup() {
-  IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK); // Inicializace přijímače
-  Serial.begin(9600); // Inicializace seriové komunikace
+  IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
+  Serial.begin(9600);
 
   pinMode(redLed, OUTPUT);
   pinMode(greenLed, OUTPUT);
@@ -73,29 +73,44 @@ void setup() {
 }
 
 void loop() {
-  if (IrReceiver.decode()) { // Kontrola, zda přišla data z přijímače
-    unsigned long irData = IrReceiver.decodedIRData.decodedRawData; // Uložení kódu z přijímače do irData
-    if (irData > 0) { // Kontrola falešných kódů
-      Serial.print("Přijatý kód: ");
-      Serial.println(irData); // Výpis kódu na seriovou linku
-      if (irData == ENTER) { // Pokud je zmáčknut ENTER
-        int intNum = stringNum.toInt(); // Přetypování String na int
-        if (intNum >= 0 && intNum <= 255) { // Kontrola rozsahu vstupního čísla
+  if (IrReceiver.decode()) {
+    unsigned long irData = IrReceiver.decodedIRData.decodedRawData;
+    if (irData > 0) {
+      if (irData == ENTER) {
+        int intNum = stringNum.toInt();
+        if (intNum >= 0 && intNum <= 255) {
           setLED(intNum);
           Serial.print("Nastavená hodnota: ");
-          Serial.println(intNum); // Výpis nastavené hodnoty do Serial monitoru
-          stringNum = ""; // Vyčištění nastřádaného čísla
+          Serial.println(intNum);
+          stringNum = "";
         } else {
           Serial.println("Mimo rozsah");
-          stringNum = ""; // Vyčištění nastřádaného čísla
+          stringNum = "";
         }
-      } else { // Funkce pro střádání čísel
+      } else {
         stringNum += receivedNum(irData);
-        Serial.print("Aktuální číslo: ");
-        Serial.println(stringNum); // Výpis aktuálního nastřádaného čísla do Serial monitoru
+        String ledName;
+        switch (currentLED) {
+          case 0:
+            ledName = "Červená";
+            break;
+          case 1:
+            ledName = "Zelená";
+            break;
+          case 2:
+            ledName = "Modrá";
+            break;
+          default:
+            ledName = "Neznámá";
+            break;
+        }
+        Serial.print("LED: ");
+        Serial.print(ledName);
+        Serial.print(" Aktuální číslo: ");
+        Serial.println(stringNum);
       }
     }
 
-    IrReceiver.resume(); // Povolení přijímání dalšího signálu
+    IrReceiver.resume();
   }
 }
